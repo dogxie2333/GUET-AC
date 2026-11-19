@@ -1,3 +1,11 @@
+# 桂电适配 · ZJU-AC 原版桌面界面
+
+桌面源码来自 [yhf216/ZJU-AC](https://github.com/yhf216/ZJU-AC)，保留原版 QML、图标、布局、交互及桌面功能，仅适配桂电认证、畅课域名和花江校区地点。源码来源与许可范围见 [UPSTREAM.md](UPSTREAM.md)。
+
+本地启动：安装 requirements-desktop.txt 后运行 `python -m zju_ac.desktop`。Windows 安装包使用原版 scripts/build_windows.py 构建。
+
+以下为此前命令行版本说明。
+
 # GUET-AC · 桂电畅课助手
 
 桂林电子科技大学畅课的 Python 命令行客户端。支持桂电统一身份认证直登、数字码/GPS 自动签到、花江校区建筑地点预设和按课程绑定地点，并提供二维码内容提交与可选的自动取码。
