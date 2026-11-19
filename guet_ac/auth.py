@@ -127,4 +127,3 @@ def login(username, password, captcha_reader=None, session=None):
     from .client import Client
     Client(session).profile()
     return session
-

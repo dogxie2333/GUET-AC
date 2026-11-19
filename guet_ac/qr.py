@@ -51,4 +51,3 @@ def parse(text):
     if not isinstance(result.get("data"), str) or not result["data"]:
         raise GuetError("二维码缺少有效 data。")
     return result
-

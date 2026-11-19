@@ -44,4 +44,3 @@ def load(path):
 def location_for(config, course_id):
     key = config["course_locations"].get(str(course_id), config["default_location"])
     return locations().get(key)
-

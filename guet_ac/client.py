@@ -158,4 +158,3 @@ class Client:
             return False
         return any(isinstance(item, dict) and str(item.get("rollcall_id", item.get("id")))
                    == str(record["id"]) and item.get("status") in SIGNED for item in records)
-

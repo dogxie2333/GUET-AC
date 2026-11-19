@@ -46,4 +46,3 @@ def remove(account):
     secure_backend()
     if keyring.get_password(SERVICE, account):
         keyring.delete_password(SERVICE, account)
-

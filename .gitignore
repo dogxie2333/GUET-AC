@@ -12,4 +12,3 @@ config.toml
 .env
 session*.json
 state*.json
-
