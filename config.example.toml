@@ -1,0 +1,14 @@
+# 地点 ID 运行 guet-ac locations 查看；坐标均为 WGS84。
+# 留空时，未绑定课程的 GPS 签到只提醒。
+default_location = ""
+poll_seconds = 15
+accuracy = 35.0
+# 与桂电原生客户端的地图提交方式一致，提交前把 WGS84 转为 GCJ-02。
+submit_coordinate_system = "gcj02"
+# 学生会话有权限取得二维码 data 时，启用后可自动取码并提交。
+auto_qr = false
+
+[course_locations]
+# 使用畅课内部 course_id，不是教务系统的课程代码。
+# "12345" = "osm-way-606411550" # 第一教学楼
+

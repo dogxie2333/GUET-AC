@@ -1,0 +1,521 @@
+{
+  "campus": "桂林电子科技大学花江校区",
+  "coordinate_system": "WGS84",
+  "retrieved": "2026-11-19",
+  "license": "ODbL-1.0",
+  "attribution": "© OpenStreetMap contributors",
+  "places": [
+    {
+      "id": "osm-way-724218274",
+      "name": "27#",
+      "latitude": 25.3127904,
+      "longitude": 110.4043117,
+      "source": "https://www.openstreetmap.org/way/724218274",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417186392",
+      "name": "D区大棚室内排球场",
+      "latitude": 25.3145268,
+      "longitude": 110.4065545,
+      "source": "https://www.openstreetmap.org/way/1417186392",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417186390",
+      "name": "D区大棚室内篮球场",
+      "latitude": 25.3151302,
+      "longitude": 110.4066495,
+      "source": "https://www.openstreetmap.org/way/1417186390",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606411548",
+      "name": "中央食堂",
+      "latitude": 25.3191451,
+      "longitude": 110.4121261,
+      "source": "https://www.openstreetmap.org/way/606411548",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-624036628",
+      "name": "仲园餐厅",
+      "latitude": 25.3146583,
+      "longitude": 110.4055826,
+      "source": "https://www.openstreetmap.org/way/624036628",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-621959945",
+      "name": "会议中心",
+      "latitude": 25.3135324,
+      "longitude": 110.415105,
+      "source": "https://www.openstreetmap.org/way/621959945",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606465853",
+      "name": "信息与通信学院",
+      "latitude": 25.317655,
+      "longitude": 110.4146086,
+      "source": "https://www.openstreetmap.org/way/606465853",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-node-5747764857",
+      "name": "信科图书馆",
+      "latitude": 25.3087686,
+      "longitude": 110.4107844,
+      "source": "https://www.openstreetmap.org/node/5747764857",
+      "method": "node"
+    },
+    {
+      "id": "osm-way-633662027",
+      "name": "信科文体中心",
+      "latitude": 25.309261,
+      "longitude": 110.4105495,
+      "source": "https://www.openstreetmap.org/way/633662027",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-624155184",
+      "name": "信科第41教学楼1区（艺术与设计学院）",
+      "latitude": 25.3094957,
+      "longitude": 110.4130133,
+      "source": "https://www.openstreetmap.org/way/624155184",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-624155188",
+      "name": "信科第41教学楼2区（艺术与设计学院）",
+      "latitude": 25.3090507,
+      "longitude": 110.4129937,
+      "source": "https://www.openstreetmap.org/way/624155188",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417175075",
+      "name": "信科第42教学楼1区（艺术与设计学院）",
+      "latitude": 25.309537,
+      "longitude": 110.413968,
+      "source": "https://www.openstreetmap.org/way/1417175075",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417175074",
+      "name": "信科第42教学楼2区（艺术与设计学院）",
+      "latitude": 25.3099911,
+      "longitude": 110.4140953,
+      "source": "https://www.openstreetmap.org/way/1417175074",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-624154300",
+      "name": "信科第43教学楼1区",
+      "latitude": 25.3100939,
+      "longitude": 110.4131549,
+      "source": "https://www.openstreetmap.org/way/624154300",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-624154299",
+      "name": "信科第43教学楼2区",
+      "latitude": 25.3104946,
+      "longitude": 110.4131268,
+      "source": "https://www.openstreetmap.org/way/624154299",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417175073",
+      "name": "信科第44教学楼1区",
+      "latitude": 25.3105343,
+      "longitude": 110.414033,
+      "source": "https://www.openstreetmap.org/way/1417175073",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417175072",
+      "name": "信科第44教学楼2区",
+      "latitude": 25.3109869,
+      "longitude": 110.4139735,
+      "source": "https://www.openstreetmap.org/way/1417175072",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417175370",
+      "name": "信科第45教学楼",
+      "latitude": 25.309741,
+      "longitude": 110.4120363,
+      "source": "https://www.openstreetmap.org/way/1417175370",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-621959944",
+      "name": "办公大楼",
+      "latitude": 25.314245,
+      "longitude": 110.4154681,
+      "source": "https://www.openstreetmap.org/way/621959944",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-686017213",
+      "name": "南门车棚",
+      "latitude": 25.3072252,
+      "longitude": 110.4140481,
+      "source": "https://www.openstreetmap.org/way/686017213",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-686017214",
+      "name": "南门车棚",
+      "latitude": 25.3074088,
+      "longitude": 110.4135739,
+      "source": "https://www.openstreetmap.org/way/686017214",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-686017215",
+      "name": "南门车棚",
+      "latitude": 25.3072596,
+      "longitude": 110.4135605,
+      "source": "https://www.openstreetmap.org/way/686017215",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-686017216",
+      "name": "南门车棚",
+      "latitude": 25.307119,
+      "longitude": 110.4135451,
+      "source": "https://www.openstreetmap.org/way/686017216",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-628549196",
+      "name": "后勤楼",
+      "latitude": 25.3107432,
+      "longitude": 110.4168078,
+      "source": "https://www.openstreetmap.org/way/628549196",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417187720",
+      "name": "四创1号楼",
+      "latitude": 25.3171369,
+      "longitude": 110.4095864,
+      "source": "https://www.openstreetmap.org/way/1417187720",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417187721",
+      "name": "四创2号楼",
+      "latitude": 25.3176148,
+      "longitude": 110.409946,
+      "source": "https://www.openstreetmap.org/way/1417187721",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417187722",
+      "name": "四创3号楼",
+      "latitude": 25.3176278,
+      "longitude": 110.4091845,
+      "source": "https://www.openstreetmap.org/way/1417187722",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417190113",
+      "name": "四创4号楼",
+      "latitude": 25.318269,
+      "longitude": 110.4092097,
+      "source": "https://www.openstreetmap.org/way/1417190113",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-624033990",
+      "name": "学生活动中心",
+      "latitude": 25.31848,
+      "longitude": 110.4104549,
+      "source": "https://www.openstreetmap.org/way/624033990",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606398823",
+      "name": "室内网球场",
+      "latitude": 25.3166603,
+      "longitude": 110.4073871,
+      "source": "https://www.openstreetmap.org/way/606398823",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-relation-20356378",
+      "name": "工程实训中心",
+      "latitude": 25.3124789,
+      "longitude": 110.4167272,
+      "source": "https://www.openstreetmap.org/relation/20356378",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417192551",
+      "name": "建交楼",
+      "latitude": 25.3141944,
+      "longitude": 110.4172728,
+      "source": "https://www.openstreetmap.org/way/1417192551",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1243629557",
+      "name": "文科楼",
+      "latitude": 25.3155327,
+      "longitude": 110.4118626,
+      "source": "https://www.openstreetmap.org/way/1243629557",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417192550",
+      "name": "机电楼",
+      "latitude": 25.3136254,
+      "longitude": 110.4171824,
+      "source": "https://www.openstreetmap.org/way/1417192550",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-624036625",
+      "name": "材料科学与工程学院实验教学中心-美育实践中心",
+      "latitude": 25.3168563,
+      "longitude": 110.405921,
+      "source": "https://www.openstreetmap.org/way/624036625",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-621959946",
+      "name": "档案馆",
+      "latitude": 25.3134837,
+      "longitude": 110.4154212,
+      "source": "https://www.openstreetmap.org/way/621959946",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606398822",
+      "name": "球类馆",
+      "latitude": 25.3182267,
+      "longitude": 110.4083066,
+      "source": "https://www.openstreetmap.org/way/606398822",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417187719",
+      "name": "电子信息实验楼",
+      "latitude": 25.3164821,
+      "longitude": 110.4089532,
+      "source": "https://www.openstreetmap.org/way/1417187719",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417180485",
+      "name": "科技楼",
+      "latitude": 25.3091305,
+      "longitude": 110.4156071,
+      "source": "https://www.openstreetmap.org/way/1417180485",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606411550",
+      "name": "第一教学楼",
+      "latitude": 25.3181717,
+      "longitude": 110.4132312,
+      "source": "https://www.openstreetmap.org/way/606411550",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478153",
+      "name": "第三教学楼",
+      "latitude": 25.3181339,
+      "longitude": 110.4145233,
+      "source": "https://www.openstreetmap.org/way/606478153",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478146",
+      "name": "第二教学楼",
+      "latitude": 25.3185022,
+      "longitude": 110.4142274,
+      "source": "https://www.openstreetmap.org/way/606478146",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478159",
+      "name": "第五教学楼",
+      "latitude": 25.3168736,
+      "longitude": 110.412257,
+      "source": "https://www.openstreetmap.org/way/606478159",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478162",
+      "name": "第六教学楼",
+      "latitude": 25.3164763,
+      "longitude": 110.41199,
+      "source": "https://www.openstreetmap.org/way/606478162",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-653889128",
+      "name": "第十一教学楼A",
+      "latitude": 25.3147984,
+      "longitude": 110.4131545,
+      "source": "https://www.openstreetmap.org/way/653889128",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-653889126",
+      "name": "第十一教学楼B",
+      "latitude": 25.3145711,
+      "longitude": 110.413365,
+      "source": "https://www.openstreetmap.org/way/653889126",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-653889127",
+      "name": "第十一教学楼C",
+      "latitude": 25.3142854,
+      "longitude": 110.4134399,
+      "source": "https://www.openstreetmap.org/way/653889127",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478194",
+      "name": "第十七教学楼",
+      "latitude": 25.3123374,
+      "longitude": 110.4138659,
+      "source": "https://www.openstreetmap.org/way/606478194",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478183",
+      "name": "第十三教学楼",
+      "latitude": 25.313661,
+      "longitude": 110.4121039,
+      "source": "https://www.openstreetmap.org/way/606478183",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478191",
+      "name": "第十六教学楼",
+      "latitude": 25.3128492,
+      "longitude": 110.4139499,
+      "source": "https://www.openstreetmap.org/way/606478191",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478186",
+      "name": "第十四教学楼",
+      "latitude": 25.313249,
+      "longitude": 110.412446,
+      "source": "https://www.openstreetmap.org/way/606478186",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606478156",
+      "name": "第四教学楼",
+      "latitude": 25.3172206,
+      "longitude": 110.412579,
+      "source": "https://www.openstreetmap.org/way/606478156",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417160190",
+      "name": "花江智慧谷1号楼（计算机与信息安全学院）",
+      "latitude": 25.3072829,
+      "longitude": 110.4043666,
+      "source": "https://www.openstreetmap.org/way/1417160190",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417160189",
+      "name": "花江智慧谷2号楼（光电工程学院）",
+      "latitude": 25.3079289,
+      "longitude": 110.4041123,
+      "source": "https://www.openstreetmap.org/way/1417160189",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417160188",
+      "name": "花江智慧谷3号楼（电子工程与自动化学院）",
+      "latitude": 25.3081412,
+      "longitude": 110.4043109,
+      "source": "https://www.openstreetmap.org/way/1417160188",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417160191",
+      "name": "花江智慧谷4号楼",
+      "latitude": 25.3082375,
+      "longitude": 110.4030623,
+      "source": "https://www.openstreetmap.org/way/1417160191",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417160192",
+      "name": "花江智慧谷5号楼（数学与计算科学学院）",
+      "latitude": 25.307563,
+      "longitude": 110.4031097,
+      "source": "https://www.openstreetmap.org/way/1417160192",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417160193",
+      "name": "花江智慧谷6号楼（人工智能学院）",
+      "latitude": 25.3071992,
+      "longitude": 110.4031112,
+      "source": "https://www.openstreetmap.org/way/1417160193",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-relation-10058079",
+      "name": "花江校区图书馆",
+      "latitude": 25.315955,
+      "longitude": 110.413615,
+      "source": "https://www.openstreetmap.org/relation/10058079",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606411549",
+      "name": "花江校区校医院/保卫处",
+      "latitude": 25.3187293,
+      "longitude": 110.4133629,
+      "source": "https://www.openstreetmap.org/way/606411549",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1293577514",
+      "name": "菜鸟驿站及韵达",
+      "latitude": 25.3068714,
+      "longitude": 110.4112304,
+      "source": "https://www.openstreetmap.org/way/1293577514",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-relation-9439439",
+      "name": "行政楼/研究生院",
+      "latitude": 25.3085234,
+      "longitude": 110.4105786,
+      "source": "https://www.openstreetmap.org/relation/9439439",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-1417175071",
+      "name": "雅园餐厅",
+      "latitude": 25.3107056,
+      "longitude": 110.40973,
+      "source": "https://www.openstreetmap.org/way/1417175071",
+      "method": "outline_vertex_mean"
+    },
+    {
+      "id": "osm-way-606915477",
+      "name": "馨园餐厅",
+      "latitude": 25.3195936,
+      "longitude": 110.4118487,
+      "source": "https://www.openstreetmap.org/way/606915477",
+      "method": "outline_vertex_mean"
+    }
+  ]
+}
