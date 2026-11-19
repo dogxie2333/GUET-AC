@@ -1,0 +1,47 @@
+name: Windows Release
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[dev]' pyinstaller
+      - run: ruff check .
+      - run: pytest -q
+      - name: Build executable
+        run: python -m PyInstaller --clean --noconfirm --onefile --console --name GUET-AC --collect-all guet_ac --collect-all keyring --hidden-import keyring.backends.Windows packaging/windows_entry.py
+      - name: Smoke test executable and embedded campus data
+        run: |
+          ./dist/GUET-AC.exe --help
+          if ($LASTEXITCODE -ne 0) { throw 'Executable failed' }
+          ./dist/GUET-AC.exe locations
+          if ($LASTEXITCODE -ne 0) { throw 'Campus data failed' }
+      - name: Bundle
+        run: |
+          Copy-Item config.example.toml dist/
+          Copy-Item README.md,LICENSE dist/
+          Compress-Archive -Path dist/GUET-AC.exe,dist/config.example.toml,dist/README.md,dist/LICENSE -DestinationPath dist/GUET-AC-windows-x64.zip
+          (Get-FileHash dist/GUET-AC.exe -Algorithm SHA256).Hash + '  GUET-AC.exe' | Set-Content dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GUET-AC-windows-x64
+          path: |
+            dist/GUET-AC.exe
+            dist/GUET-AC-windows-x64.zip
+            dist/SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          files: |
+            dist/GUET-AC.exe
+            dist/GUET-AC-windows-x64.zip
+            dist/SHA256SUMS.txt

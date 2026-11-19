@@ -76,3 +76,17 @@ uv run ruff check .
 实现测试使用模拟认证和业务响应。开发期间读取了桂电实际登录跳转与认证前端脚本；没有提供学生凭据、没有执行真实账号签到。
 
 代码采用 [MIT](LICENSE)，地点数据库采用 [ODbL 1.0](guet_ac/data/README.md)。登录和二维码协议来源、已有手机 App 的完成度见 [docs/protocol.md](docs/protocol.md)。
+
+## Windows exe
+
+在 [Releases](https://github.com/dogxie2333/GUET-AC/releases/latest) 下载 Windows x64 压缩包并解压，在该目录打开 PowerShell，无需安装 Python：
+
+```powershell
+Copy-Item config.example.toml config.toml
+.\GUET-AC.exe login
+.\GUET-AC.exe locations
+.\GUET-AC.exe status
+.\GUET-AC.exe watch
+```
+
+这是控制台程序，命令参数与上文 `guet-ac` 相同。GitHub Actions 在 Windows 上构建，执行协议测试及 exe 启动、内置地点读取检查，并在版本标签推送后上传发行文件。
