@@ -1,0 +1,70 @@
+name: Desktop Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['desktop-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: '1'
+      QT_QPA_PLATFORM: offscreen
+      QT_QUICK_BACKEND: software
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements-build.txt -r requirements-dev.txt coord-convert responses keyring
+
+      - name: Run tests
+        run: python -m pytest tests tests_upstream --ignore=tests_upstream/test_auth.py --ignore=tests_upstream/test_auth_cli.py -q
+
+      - name: Prepare USB resources
+        run: |
+          git clone --depth 1 https://github.com/yhf216/VRun.git build/VRun
+          python scripts/prepare_ios_resources.py --source build/VRun
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build original desktop installer
+        run: python scripts/build_windows.py
+
+      - name: Check frozen desktop
+        run: |
+          $env:ZJU_AC_SMOKE_DIR = "$env:RUNNER_TEMP/desktop-smoke"
+          $exe = Resolve-Path build/windows/payload/ZJU-AC/ZJU-AC.exe
+          foreach ($mode in @('--smoke-test','--worker-smoke-test','--ios17-import-smoke','--ios17-worker-smoke')) {
+            $p = Start-Process -FilePath $exe -ArgumentList $mode -PassThru -WindowStyle Hidden
+            if (-not $p.WaitForExit(120000)) { throw "Timeout: $mode" }
+            if ($p.ExitCode -ne 0) { throw "Failed: $mode" }
+          }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-ui-check
+          path: '${{ runner.temp }}/desktop-smoke'
+
+      - name: Package desktop
+        run: |
+          Compress-Archive -Path build/windows/payload/ZJU-AC -DestinationPath dist/GUET-AC-desktop-windows-x64.zip
+          Copy-Item dist/ZJU-AC-Setup-0.2.0.exe dist/GUET-AC-Setup-0.2.0.exe
+
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: GUET-AC Desktop 0.2.0
+          body: 'Original ZJU-AC desktop UI and features with GUET authentication and Huajiang campus locations.'
+          files: |
+            dist/GUET-AC-Setup-0.2.0.exe
+            dist/GUET-AC-desktop-windows-x64.zip
