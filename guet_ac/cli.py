@@ -88,7 +88,7 @@ def run(args):
         session = auth.login(username, password, captcha_reader)
         try:
             store.save(args.account, session)
-            print("桂电畅课登录成功，会话已保存到系统凭据库。")
+            print("桂电畅课登录成功，会话已保存。")
         finally:
             session.close()
         return

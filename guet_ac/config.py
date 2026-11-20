@@ -1,10 +1,14 @@
 import json
 import math
-import tomllib
 from importlib.resources import files
 from pathlib import Path
 
 from .auth import GuetError
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 
 def locations():

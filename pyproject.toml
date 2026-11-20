@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "guet-ac"
 version = "0.2.0"
 description = "桂林电子科技大学畅课助手"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "MIT"
-dependencies = ["requests>=2.32", "beautifulsoup4>=4.12", "cryptography>=44", "keyring>=25", "coord-convert>=0.2.1"]
+dependencies = ["requests>=2.32", "beautifulsoup4>=4.12", "cryptography>=44", "keyring>=25", "coord-convert>=0.2.1", "tomli>=2; python_version < '3.11'"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "responses>=0.25", "ruff>=0.11"]

@@ -1,6 +1,6 @@
 import base64
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, quote
 
 import pytest
@@ -134,7 +134,7 @@ def test_place_source_and_coordinates():
 @pytest.mark.parametrize("changes", [{"is_expired": True}, {"status": "on_call"},
                                      {"rollcall_status": "finished"},
                                      {"end_time": "invalid"},
-                                     {"end_time": (datetime.now(UTC) - timedelta(minutes=1)).isoformat()}])
+                                     {"end_time": (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()}])
 def test_no_submit_for_inactive(changes):
     assert not active(record(**changes))
 
