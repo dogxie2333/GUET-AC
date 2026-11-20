@@ -25,16 +25,13 @@ async function downloadQqImage(url, limit) {
   return Buffer.concat(chunks, bytes);
 }
 
-export function createGuetPrivateRoute({ download = downloadQqImage, run = exec, clock = Date.now } = {}) {
-  const pending = new Map();
-  return async ({ privateChat, bound, peer, text, images, reply }) => {
+export function createGuetPrivateRoute({ download = downloadQqImage, run = exec } = {}) {
+  return async ({ privateChat, bound, text, images, reply }) => {
     if (!privateChat) return false;
     const command = text.trim();
-    const qr = command === '/扫课';
     const status = command === '/畅课状态';
     if (!bound) {
-      pending.delete(peer);
-      if (!qr && !status) return false;
+      if (!status) return false;
       await reply('请先在猫猫私聊发送 /bind 绑定 EMB 账号。');
       return true;
     }
@@ -53,16 +50,7 @@ export function createGuetPrivateRoute({ download = downloadQqImage, run = exec,
       await reply(active ? '畅课只读监控正在运行喵。' : '畅课监控尚未运行喵。');
       return true;
     }
-    const now = clock();
-    for (const [id, end] of pending) if (end <= now) pending.delete(id);
-    if (!qr && !(images.length && pending.has(peer))) return false;
-    if (!images.length) {
-      if (pending.size >= 64 && !pending.has(peer)) return false;
-      pending.set(peer, now + 90_000);
-      await reply('请在 90 秒内发一张二维码图片。我会在 Pi 上识别并回复结果喵。');
-      return true;
-    }
-    pending.delete(peer);
+    if (!images.length) return false;
     if (images.length !== 1 || !images[0].url) {
       await reply('请一次发送一张二维码图片喵。');
       return true;
