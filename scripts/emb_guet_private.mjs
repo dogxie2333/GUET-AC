@@ -41,7 +41,13 @@ export function createGuetPrivateRoute({ download = downloadQqImage, run = exec,
     if (status) {
       let active = false;
       try {
-        await run('systemctl', ['--user', 'is-active', '--quiet', 'guet-ac'], { timeout: 4000 });
+        const runtimeDir = process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid()}`;
+        const env = {
+          ...process.env,
+          XDG_RUNTIME_DIR: runtimeDir,
+          DBUS_SESSION_BUS_ADDRESS: process.env.DBUS_SESSION_BUS_ADDRESS || `unix:path=${runtimeDir}/bus`,
+        };
+        await run('systemctl', ['--user', 'is-active', '--quiet', 'guet-ac'], { timeout: 4000, env });
         active = true;
       } catch { /* Service is not active or the user bus is unavailable. */ }
       await reply(active ? '畅课只读监控正在运行喵。' : '畅课监控尚未运行喵。');
