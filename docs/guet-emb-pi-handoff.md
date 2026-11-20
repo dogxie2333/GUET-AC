@@ -55,3 +55,14 @@ journalctl --user -u guet-ac --since '15 min ago'
 - **畅课会话失效。** 在本机仓库用 `uv run --no-project --python 3.10 --with playwright python scripts/guet_browser_login.py`。它打开独立 Chrome，通过校方认证后等待畅课资料接口确认，再由用户确认通过 SSH 交付仅限畅课域名的会话。导入后在 Pi 先跑只读查询。
 - **需要暂时关闭自动数字提交。** 把用户单元覆盖里的 `--auto-number` 换成 `--dry-run`，保留 `--event-dir`，随后运行 `systemctl --user daemon-reload` 和 `systemctl --user restart guet-ac`，再查实际 `ExecStart`。
 - **回滚。** Pi 上保留了识别器 `guet_qr_preview.py.before-detail-pass`，恢复该文件后下条图片消息即使用旧识别器。QQ 桥接各次变更也保留了相邻备份，如 `emb-plugin.js.before-guet-notify`、`sdk-transport.js.before-markdown-retry` 和 `qq-maibot-live.js.before-boot-retry`。只回滚关联文件，先检查差异和 Node 语法，再重启 `emb-qq-bridge.service` 并确认健康检查为 `200`。
+
+## 5. 上游完整识别方案对照
+
+使用同一张用户提供的 QQ 聊天截图，仅统计检测数和解码数，未输出二维码内容。
+
+| 上游方案 | 整张截图 | QQ 图片预览 | 投影区域 |
+| --- | --- | --- | --- |
+| QReader 3.16，官方 small 权重，置信度阈值 0.25 | 检测 0，解码 0 | 检测 1，解码 0 | 检测 1，解码 0 |
+| OpenCV contrib 4.12.0，原生 WeChatQRCode + 上游 Caffe 权重 | 解码 0 | 解码 0 | 解码 0 |
+
+OpenCV 用默认缩放和原分辨率各跑一轮，两个设置结果相同。两种方案均直接调用上游检测与解码接口，无自定义组合，因此本轮不替换 Pi 上的识别器。下一轮使用课堂原图和 QQ 接收的压缩图做同源对比；单张聊天截图的结果不能代表课堂原图。
