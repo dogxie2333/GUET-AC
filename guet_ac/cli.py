@@ -2,6 +2,7 @@ import argparse
 import getpass
 import json
 import os
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -82,6 +83,27 @@ def run(args):
         store.remove(args.account)
         print("已移除本机登录会话。")
         return
+    if args.command == "import-session":
+        raw = sys.stdin.read(65537)
+        if len(raw) > 65536:
+            raise GuetError("会话输入过大。")
+        cookies = json.loads(raw)
+        if not isinstance(cookies, list) or not 1 <= len(cookies) <= 128:
+            raise GuetError("会话格式无效。")
+        with requests.Session() as session:
+            for row in cookies:
+                if not isinstance(row, dict) or row.get("domain", "").lstrip(".") != "courses.guet.edu.cn":
+                    raise GuetError("仅接受桂电畅课域名的会话。")
+                expiration = row.get("expires", -1)
+                session.cookies.set_cookie(requests.cookies.create_cookie(
+                    name=row["name"], value=row["value"], domain=row["domain"],
+                    path=row["path"], secure=True,
+                    expires=int(expiration) if expiration > 0 else None,
+                ))
+            Client(session).profile()
+            store.save(args.account, session)
+        print("Pi 已验证并保存桂电畅课会话。")
+        return
     if args.command == "login":
         username = input("桂电学号/工号：").strip()
         password = getpass.getpass("统一身份认证密码：")
@@ -125,7 +147,7 @@ def main():
     parser.add_argument("--account", default="default", help="本机账号别名，各别名会话独立")
     parser.add_argument("--config", default="config.toml")
     commands = parser.add_subparsers(dest="command", required=True)
-    for command in ("login", "logout", "status", "locations", "qr"):
+    for command in ("login", "import-session", "logout", "status", "locations", "qr"):
         commands.add_parser(command)
     for command in ("watch", "once"):
         sub = commands.add_parser(command)
