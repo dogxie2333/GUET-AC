@@ -3,9 +3,10 @@
 import argparse
 import json
 import subprocess
+from time import monotonic
 from urllib.parse import urlsplit
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Error, TimeoutError, sync_playwright
 
 COURSES = "https://courses.guet.edu.cn"
 PI = "orangepi@172.16.8.147"
@@ -24,31 +25,53 @@ def main():
             context = browser.new_context()
             page = context.new_page()
             page.goto(COURSES + "/user/index", wait_until="domcontentloaded", timeout=60000)
-            print("请在新窗口完成桂电认证。返回畅课首页后，在这里按 Enter。")
-            input()
-            course_pages = [
-                item for item in context.pages
-                if urlsplit(item.url).hostname == "courses.guet.edu.cn"
-            ]
-            if not course_pages:
-                parser.exit(1, "未在本次独立窗口找到已打开的畅课页。请确认登录的是该窗口。\n")
-            profile = course_pages[-1].evaluate("""
-                async () => {
-                    const response = await fetch('/api/profile', {
-                        credentials: 'same-origin',
-                        headers: {Accept: 'application/json'}
-                    });
-                    let hasId = false;
-                    if (response.ok) {
-                        const body = await response.json().catch(() => null);
-                        hasId = Boolean(body?.id);
+            print("请在本命令打开的新 Chrome 窗口登录。终端会自动检测，不用按 Enter。", flush=True)
+            deadline = monotonic() + 600
+            last_hosts = ""
+            profile = None
+            while monotonic() < deadline and browser.is_connected():
+                hosts = "、".join(sorted({
+                    urlsplit(item.url).hostname for item in context.pages
+                    if urlsplit(item.url).hostname in {
+                        "courses.guet.edu.cn", "cas.guet.edu.cn", "identity.guet.edu.cn"
                     }
-                    return {status: response.status, redirected: response.redirected, hasId};
-                }
-            """)
-            if not profile["hasId"]:
-                redirect = "，发生跳转" if profile["redirected"] else ""
-                parser.exit(1, f"已返回畅课，个人资料接口未确认登录（HTTP {profile['status']}{redirect}）。\n")
+                }))
+                if hosts and hosts != last_hosts:
+                    print(f"当前窗口：{hosts}", flush=True)
+                    last_hosts = hosts
+                course_pages = [
+                    item for item in context.pages
+                    if urlsplit(item.url).hostname == "courses.guet.edu.cn"
+                ]
+                for item in reversed(course_pages):
+                    try:
+                        result = item.evaluate("""
+                            async () => {
+                                const response = await fetch('/api/profile', {
+                                    credentials: 'same-origin',
+                                    headers: {Accept: 'application/json'},
+                                    signal: AbortSignal.timeout(5000)
+                                });
+                                const body = response.ok ? await response.json().catch(() => null) : null;
+                                return {status: response.status, hasId: Boolean(body?.id)};
+                            }
+                        """)
+                        if result != profile:
+                            print(f"畅课个人资料接口 HTTP {result['status']}", flush=True)
+                            profile = result
+                        if profile["hasId"]:
+                            break
+                    except Error:
+                        # The browser can be redirecting while the user finishes SSO.
+                        continue
+                if profile and profile["hasId"]:
+                    break
+                try:
+                    context.wait_for_event("page", timeout=1500)
+                except TimeoutError:
+                    pass
+            else:
+                parser.exit(1, "等待结束，未在本次窗口检测到有效的畅课会话。\n")
             cookies = context.cookies()
             scoped = [
                 {key: row[key] for key in ("name", "value", "domain", "path", "secure", "expires")}
