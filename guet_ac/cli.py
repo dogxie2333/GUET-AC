@@ -1,5 +1,6 @@
 import argparse
 import getpass
+import hashlib
 import json
 import os
 import sys
@@ -29,10 +30,40 @@ def normalized(records):
     return [{**r, "id": str(r.get("rollcall_id", r.get("id")))} for r in records]
 
 
-def watch(client, cfg, once=False, dry_run=False):
+def report_activity(record, channel, stage, event_dir):
+    title = " ".join(str(record.get("course_title") or "课程").split())[:120]
+    messages = {
+        "started": f"{title}的{channel}签到已开始。",
+        "confirmed": f"{title}的{channel}签到已确认完成。",
+        "unconfirmed": f"{title}的{channel}签到未确认，请查看畅课。",
+    }
+    print(messages[stage], flush=True)
+    if not event_dir:
+        return
+    directory = Path(event_dir)
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    digest = hashlib.sha256(f"{record['id']}:{stage}".encode()).hexdigest()
+    destination = directory / f"{digest}.json"
+    if destination.exists():
+        return
+    fd, temporary = tempfile.mkstemp(dir=directory)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump({"stage": stage, "channel": channel, "message": messages[stage]},
+                      stream, ensure_ascii=False)
+        try:
+            os.link(temporary, destination)
+        except FileExistsError:
+            pass
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def watch(client, cfg, once=False, dry_run=False, auto_number=False, event_dir=None):
     # 一个进程对一个活动最多提交一次；网络不确定时也不自动重复写请求。
     attempted = set()
     informed = set()
+    announced = set()
     while True:
         for record in normalized(client.rollcalls()):
             rid = record["id"]
@@ -40,6 +71,11 @@ def watch(client, cfg, once=False, dry_run=False):
                 continue
             channel = kind(record)
             label = f'{record.get("course_title", "课程")} / {rid} / {channel}'
+            if rid not in announced and channel in {"数字码", "GPS", "二维码"}:
+                report_activity(record, channel, "started", event_dir)
+                announced.add(rid)
+            if auto_number and channel != "数字码":
+                continue
             if dry_run:
                 if rid not in informed:
                     print(f"发现：{label}")
@@ -61,8 +97,10 @@ def watch(client, cfg, once=False, dry_run=False):
                     raise GuetError("此类型仅提醒；二维码自动取码由 auto_qr 配置启用。")
                 attempted.add(rid)
                 confirmed = client.submit(record, channel, **options)
-                print(f'{label}：' + ("已确认签到" if confirmed else "已提交，请在畅课查看结果"))
+                report_activity(record, channel, "confirmed" if confirmed else "unconfirmed", event_dir)
             except GuetError as exc:
+                if rid in attempted:
+                    report_activity(record, channel, "unconfirmed", event_dir)
                 if rid not in informed:
                     print(f"{label}：{exc}")
                     informed.add(rid)
@@ -126,7 +164,7 @@ def run(args):
                                  ensure_ascii=False), kind(record))
         elif args.command in ("watch", "once"):
             cfg = config.load(args.config)
-            watch(client, cfg, args.command == "once", args.dry_run)
+            watch(client, cfg, args.command == "once", args.dry_run, args.auto_number, args.event_dir)
         elif args.command == "qr":
             # 内容从 stdin 输入，避免有效令牌留在 shell 历史中。
             payload = qr.parse(input("粘贴二维码原始内容："))
@@ -151,7 +189,10 @@ def main():
         commands.add_parser(command)
     for command in ("watch", "once"):
         sub = commands.add_parser(command)
-        sub.add_argument("--dry-run", action="store_true", help="只查询，不提交")
+        mode = sub.add_mutually_exclusive_group()
+        mode.add_argument("--dry-run", action="store_true", help="只查询，不提交")
+        mode.add_argument("--auto-number", action="store_true", help="自动处理数字码，GPS 和二维码仅提示")
+        sub.add_argument("--event-dir", help="将活动开始和提交结果记录到本地目录")
     number = commands.add_parser("number")
     number.add_argument("course", help="畅课 course_id")
     number.add_argument("rollcall", help="签到活动编号")
