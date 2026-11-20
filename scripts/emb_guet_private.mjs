@@ -30,8 +30,7 @@ export function createGuetPrivateRoute({ download = downloadQqImage, run = exec 
     if (!privateChat) return false;
     const command = text.trim();
     const status = command === '/畅课状态';
-    if (!bound) {
-      if (!status) return false;
+    if (status && !bound) {
       await reply('请先在猫猫私聊发送 /bind 绑定 EMB 账号。');
       return true;
     }
