@@ -3,7 +3,7 @@ import { syncBuiltinESMExports } from 'node:module';
 import tls from 'node:tls';
 
 const original = dns.lookup;
-const qqHosts = new Set(['bots.qq.com','api.sgroup.qq.com']);
+const qqHosts = new Set(['bots.qq.com','api.sgroup.qq.com','api.bot.qq.com']);
 const preferred = new Map();
 
 function reachable(host, candidate) {
@@ -47,8 +47,10 @@ syncBuiltinESMExports();
 const builtinFetch = globalThis.fetch;
 globalThis.fetch = async function(input, init) {
   // SDK uses string URLs; leave every other fetch, including QQ sends, alone.
-  const token = input === 'https://bots.qq.com/app/getAppAccessToken' && init?.method === 'POST';
-  const gateway = input === 'https://api.sgroup.qq.com/gateway' &&
+  const token = (input === 'https://api.bot.qq.com/app/getAppAccessToken' ||
+    input === 'https://bots.qq.com/app/getAppAccessToken') && init?.method === 'POST';
+  const gateway = (input === 'https://api.bot.qq.com/gateway' ||
+    input === 'https://api.sgroup.qq.com/gateway') &&
     (!init?.method || init.method === 'GET');
   if (!token && !gateway) return builtinFetch(input, init);
   let failure;
@@ -67,7 +69,7 @@ globalThis.fetch = async function(input, init) {
         throw error;
       }
       failure = error;
-      preferred.delete(token ? 'bots.qq.com' : 'api.sgroup.qq.com');
+      preferred.delete(new URL(input).hostname);
       console.warn('QQ_EDGE_RETRY',token ? 'token' : 'gateway',attempt+1);
     }
   }
