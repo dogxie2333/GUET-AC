@@ -26,11 +26,29 @@ def main():
             page.goto(COURSES + "/user/index", wait_until="domcontentloaded", timeout=60000)
             print("请在新窗口完成桂电认证。返回畅课首页后，在这里按 Enter。")
             input()
-            if urlsplit(page.url).hostname != "courses.guet.edu.cn":
-                parser.exit(1, "当前页面尚未返回桂电畅课。\n")
-            response = context.request.get(COURSES + "/api/profile", max_redirects=0)
-            if not response.ok or not response.json().get("id"):
-                parser.exit(1, "浏览器中未检测到有效的畅课会话。\n")
+            course_pages = [
+                item for item in context.pages
+                if urlsplit(item.url).hostname == "courses.guet.edu.cn"
+            ]
+            if not course_pages:
+                parser.exit(1, "未在本次独立窗口找到已打开的畅课页。请确认登录的是该窗口。\n")
+            profile = course_pages[-1].evaluate("""
+                async () => {
+                    const response = await fetch('/api/profile', {
+                        credentials: 'same-origin',
+                        headers: {Accept: 'application/json'}
+                    });
+                    let hasId = false;
+                    if (response.ok) {
+                        const body = await response.json().catch(() => null);
+                        hasId = Boolean(body?.id);
+                    }
+                    return {status: response.status, redirected: response.redirected, hasId};
+                }
+            """)
+            if not profile["hasId"]:
+                redirect = "，发生跳转" if profile["redirected"] else ""
+                parser.exit(1, f"已返回畅课，个人资料接口未确认登录（HTTP {profile['status']}{redirect}）。\n")
             cookies = context.cookies()
             scoped = [
                 {key: row[key] for key in ("name", "value", "domain", "path", "secure", "expires")}
