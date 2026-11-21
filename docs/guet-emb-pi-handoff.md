@@ -11,9 +11,9 @@
 | 自动数字签到 | 已启用，真实提交待活动 | 数字码读取→提交→回查；跨重启去重，只有畅课回查确认才显示“已确认完成”。本轮 31 项旧测试 + 新增测试全部通过。 |
 | GPS 自动签到 | 已启用，真实活动待验收 | `auto_gps=true`，按 `course_locations`/`default_location` 取花江地点并 WGS84→GCJ-02 提交；未绑定地点时只发 `action_required`，不假提交。 |
 | 课程地点网页 | **已接 Pi** | <https://ai.guet.win/guet-locations.html>，仅管理员；`GET /api/guet-config` 实测 200，返回 64 个地点、当前配置和服务状态；保存/取消绑定与 auto_* 开关走 `POST`。 |
-| QQ 私聊发图 → 畅课扫码提交 | **已接通代码链路，待真实活动** | 私聊图片 → 下载 → 识别 → 解析 → `qr-submit` → 回查 → 分阶段回执；Pi 探针实测 1.25 s 返回“二维码有效，但提交被畅课拒绝（可能活动已结束）”。仅已绑定私聊可提交。 |
+| QQ 私聊发图 → 畅课扫码提交 | **已接通真实 QQ 链路，待真实活动** | 私聊图片 → 下载 → 识别 → 解析 → `qr-submit` → 回查 → 分阶段回执；用户实测收到“二维码有效，但提交被畅课拒绝（可能活动已结束）”。按用户明确要求，任意私聊均可提交，不再要求 `/bind`；每私聊 10 分钟最多 8 张图。 |
 | 投影小码识别 | Aruco 已部署 Pi | `wxscan → zxing → detail → aruco`；Aruco 在 `systemd-run --user --scope` 中运行，避开桥接 150 MiB cgroup；Pi 合成投影图实测 Aruco 定位 1 个并解码成功。 |
-| 签到事件主动通知 | 模块已上线，QQ 权限未开通 | 事件读取、唯一绑定私聊、`platformAllowed && subscribed` 限制、15 分钟窗口、`.dispatch` 去重均已在 Linux 上单测；当前平台许可数与订阅数均为 0，尚无真实推送。 |
+| 签到事件主动通知 | **已打通真实推送** | 唯一已绑定私聊、15 分钟窗口、`.dispatch` 去重；真实主动消息 API 实测 HTTP 200 且返回消息 ID，测试事件 `.dispatch` 写 `sent`。QQ 的 `C2C_MSG_RECEIVE` 生命周期事件未在网关上观察到，因此改用“发送结果”证明平台许可，不再依赖 EMB 网页订阅。 |
 | VPS 手机扫码页 | 教程已写好，静态页只显示结果 | [vps-public-qr-scan-guide.md](vps-public-qr-scan-guide.md)；不连接 Pi、不提交签到，提交链路走 QQ 照片或网页配置后的 Pi 监控。 |
 
 ## 2. 本轮补齐的内容
@@ -39,7 +39,8 @@
 
 - 私聊图片处理顺序：附件下载 → `guet_qr_preview.py --json` → 解析畅课载荷 → `guet-ac qr-submit` → 回查 → 单条回执。
 - 回执区分：下载失败、超过 8 MiB、图片无法读取、无二维码、多二维码、不是畅课码、会话失效、活动已结束/提交被拒、网络中断、已提交未确认、已确认。
-- 只对已绑定私聊提交；未绑定私聊只提示 `/bind`，避免任何人用猫猫的会话替号主签到。
+- 按用户明确要求，**任意私聊**发图都会识别并提交，不再要求 `/bind`；未绑定只影响“签到事件推送目标”，不影响照片提交。每私聊 10 分钟最多 8 张图，防止刷解码。
+- 风险提示：当前 `c2cMode=open`，能私聊猫猫的人都可以让机器人用号主畅课会话提交。若以后要收紧，可把 QQ c2c 改为 allowlist，或在 `emb_guet_private.mjs` 恢复 bound 判断；本轮按用户选择保持开放提交。
 - 附件 URL 只允许 `https` 且主机属于 `qpic.cn`/`qq.com`/`qq.com.cn`；临时图片用后立即删除；日志不记录 URL、二维码内容或会话凭据。
 - 解码器修正：zxing-cpp 的 `.text` 会把 `\x10/\x1f/\x1e` 显示转义为 `<DLE>` 等，改用 `item.bytes` 还原；每个解码候选必须先通过 `qr.parse` 才采用，前序解码器的坏文本不会挡住后续兜底。
 
@@ -51,9 +52,10 @@
 
 ### 2.5 主动通知
 
-- `knownStages` 增加 `action_required`；`test-event` 写入带 `【测试】` 前缀和 `test:true` 的事件，走与真实事件相同的权限路径。
-- 只有唯一已绑定私聊、平台 `platformAllowed`、EMB 端 `subscribed` 同时满足才发送；发送结果不明时写 `unconfirmed` 到 `.dispatch`，不自动重试。
-- 当前 Pi 的 `platformAllowed=false`、`subscribed=false`，这是仅剩的用户侧动作，见第 4 节。
+- `knownStages` 增加 `action_required`；`test-event` 写入带 `【测试】` 前缀和 `test:true` 的事件，走与真实事件相同的投递路径。
+- 只向**唯一**已绑定私聊发送；不再要求 EMB 提醒页勾选订阅，也不依赖未到达的 `C2C_MSG_RECEIVE` 生命周期事件。QQ 客户端仍需开启机器人资料卡的“允许主动发送/主动消息”开关，平台会在真正发送时校验。
+- 发送成功写 `.dispatch` 的 `sent`；结果不明写 `unconfirmed`，不自动重试；15 分钟窗口和每轮最多 4 条保持不变。通用提醒任务仍走原来的订阅/权限模型，不受此改动影响。
+- 实测：直接调用主动消息 API 返回 HTTP 200 和消息 ID；用 `test-event` 生成事件后，桥接约 5 秒内发送，`.dispatch` 内容为 `sent`，健康计数 `sendCount` 增加。
 
 ## 3. 运行入口与源码
 
@@ -68,19 +70,18 @@
 
 ## 4. 验收顺序（含仅剩的用户操作）
 
-1. **QQ 主动通知授权（用户操作）。** 在手机 QQ 打开猫猫私聊 → 机器人头像/资料卡 → 开启“主动消息”推送开关。官方事件为 `C2C_MSG_RECEIVE`，开启后桥接才会记录平台许可。
-2. **EMB 提醒订阅（用户操作）。** 打开 <https://ai.guet.win/?plugin=reminders> → 刷新，确认对应私聊显示“QQ 通知已开启” → 勾选“我订阅此目标的定时提醒”并保存（任务可先停用，但订阅必须勾选）。
-3. **主动通知测试（Pi 命令）。** 在 Pi 运行：
+1. **QQ 主动通知授权（已由用户完成）。** 手机 QQ 打开猫猫私聊 → 机器人头像/资料卡 → 开启“允许主动发送/主动消息”开关。平台侧已用真实主动消息 API 验证可发送。
+2. **主动通知测试（Pi 命令）。** 在 Pi 运行：
    ```bash
    cd ~/.local/share/guet-ac
    .venv/bin/guet-ac test-event --event-dir events --channel 数字码 --stage confirmed
    sleep 8
    ls -la events | tail -5
    ```
-   预期出现事件文件和同名 `.dispatch`（内容 `sent` 或 `unconfirmed`），桥接健康检查的 `sendCount` 增加，QQ 收到“【测试】数字码签到已确认完成。”。未收到时见第 5 节。
-4. **QQ 照片链路（用户操作）。** 在已绑定私聊发送一张二维码照片。若没有进行中的扫码签到，预期回执为“二维码有效，但提交被畅课拒绝（可能活动已结束）喵。”；有真实活动时才会出现“已确认签到”。同一会话连续发多张会依次处理，一次只允许一张。
-5. **自动数字/GPS 真实验收。** 等真实数字码或 GPS 活动出现：检查事件目录 `started`、一次提交、`confirmed`；GPS 需先在课程地点网页绑定对应 `course_id`，否则只会收到 `action_required`。没有真实活动时继续用 `pytest`/`once --dry-run`，不伪造真实结果。
-6. **投影小码真实原图。** 取得教室投影照片后，在 Pi 运行 `python guet_qr_bench.py 照片路径`，只统计检测/解码与耗时，不输出内容；再决定是否需要调整 Aruco 参数。
+   预期出现事件文件和同名 `.dispatch`（内容 `sent`），QQ 收到“【测试】数字码签到已确认完成。”。不需要 EMB 提醒页订阅；未收到时见第 5 节。
+3. **QQ 照片链路（已由用户实测）。** 发送 `dist/guet-qr-chain-test.png`，收到“二维码有效，但提交被畅课拒绝（可能活动已结束）喵。”，证明下载→识别→解析→提交→回执整条链路可用；有真实活动时才会出现“已确认签到”。任意私聊均可提交（含未绑定），每私聊 10 分钟最多 8 张图；未绑定只影响主动通知目标，不影响提交。
+4. **自动数字/GPS 真实验收。** 等真实数字码或 GPS 活动出现：检查事件目录 `started`、一次提交、`confirmed`；GPS 需先在课程地点网页绑定对应 `course_id`，否则只会收到 `action_required`。没有真实活动时继续用 `pytest`/`once --dry-run`，不伪造真实结果。
+5. **投影小码真实原图。** 取得教室投影照片后，在 Pi 运行 `python guet_qr_bench.py 照片路径`，只统计检测/解码与耗时，不输出内容；再决定是否需要调整 Aruco 参数。
 
 ## 5. 排查与恢复
 
@@ -101,7 +102,8 @@ journalctl -u emb-qq-bridge --since '15 min ago' --no-pager
 ```
 
 - **QQ 显示异常或无回复。** 健康检查 200 且 `connected:true`、日志出现 `OFFICIAL_MAIBOT_QQ_READY` 才算连接就绪。不要为检查状态反复重启；桥接认证和网关查询走 `api.bot.qq.com`，Pi 直连部分 QQ DNS 会超时，线上已有地址优选和启动重试。
-- **主动通知不发送。** 依次核对：私聊是否唯一绑定；QQ 资料卡“主动消息”开关是否开启（`platformAllowed`）；提醒页是否勾选订阅（`subscribed`）；事件是否在 15 分钟内；`.dispatch` 是否已存在。权限未开时事件不会发送，也不会产生 `.dispatch`。桥接日志出现 `QQ notification policy event rejected` 说明平台生命周期事件未通过过滤。
+- **主动通知不发送。** 依次核对：私聊是否唯一绑定；QQ 资料卡“允许主动发送/主动消息”开关是否开启；事件是否在 15 分钟内；`.dispatch` 是否已存在。桥接不依赖 `C2C_MSG_RECEIVE` 生命周期事件，直接看发送结果：`.dispatch` 为 `sent` 表示 QQ 已接受，`unconfirmed` 表示网络/平台结果不明且不会重试。若发送被平台拒绝，检查客户端开关、平台主动消息额度和机器人认证状态。
+- **QQ 自动消息生命周期事件未观察到（已知）。** `emb-qq-bridge` 能收到普通 C2C 消息，但 `C2C_MSG_RECEIVE`/`C2C_MSG_REJECT` 未在网关注入；这不影响 GUET 主动通知，因为投递改用真实发送结果验证。若以后要做“用户关闭通知立即停止发送”的实时联动，需要在 SDK 网关层继续排查 intent/事件分发，不能用轮询猜测。
 - **发图无回执或回执异常。** 先看桥接健康计数和日志。回执已区分下载/解码/解析/会话/提交/网络阶段；需要定位时取原图在 Pi 上跑 `guet_qr_preview.py --json`，不要记录二维码内容。wxscan 模型目录为 `~/.local/share/guet-ac/wxscan/`。
 - **Aruco 不生效。** 确认 `scripts/guet_aruco_worker.py` 存在、`~/.local/bin/systemd-run` 可用、桥接进程能访问 `/run/user/1000/bus`；Aruco 只在其他解码器失败后触发，失败会静默跳过，不影响普通识别。临时禁用可把 worker 改名（scoped 调用会安全返回空）。
 - **畅课会话失效。** 在本机仓库运行 `uv run --no-project --python 3.10 --with playwright python scripts/guet_browser_login.py`，通过校方认证后由用户确认通过 SSH 交付仅限畅课域名的会话；导入后在 Pi 先跑 `status --json`。
@@ -125,9 +127,9 @@ journalctl -u emb-qq-bridge --since '15 min ago' --no-pager
 - Pi 安装：`guet-ac 0.2.0 → 0.3.0`，`guet-ac` 用户单元 active、NRestarts=0、ExecStart 为 `watch --auto --event-dir …/events`。
 - Pi 只读：`status --json` 返回本人资料和空活动列表；`config-json` 显示 `auto_number=true`、`auto_gps=true`；`locations --json` 返回 64 地点。
 - Pi 解码：wxscan 读出普通和紧凑码（compact 控制字节解析正确）；Aruco scoped worker 0.45 s 返回候选；合成投影基准 clean/far-small/low-contrast 可解码，inverted 由 zxing try_invert 解出，multiple/no-qr 分类正确。
-- Pi 全链路探针：`download → preview → qr-submit` 共 1.25 s，回执“二维码有效，但提交被畅课拒绝（可能活动已结束）”，证明分阶段回执和会话读取正常。
+- Pi 全链路真实 QQ：用户发送 `dist/guet-qr-chain-test.png`，约 1.3 s 内收到“二维码有效，但提交被畅课拒绝（可能活动已结束）喵。”，证明 QQ 附件下载、wxscan 识别、载荷解析、`qr-submit` 会话读取和分阶段回执全部打通；未绑定私聊也走同一提交路径（用户要求），仅受每私聊图片频率限制。
 - Web API：管理员 GET 200（64 地点、service auto 三项 true）；POST 绑定/取消绑定 200；未登录 302/401 符合预期。
-- 主动通知：模块与事件格式已在 Linux/Node 单测覆盖；真实推送等待第 4 节授权后验收。
+- 主动通知：直接调用 QQ 主动消息 API 返回 HTTP 200 且带消息 ID；`test-event` 生成事件后桥接约 5 秒内发送，`.dispatch` 内容为 `sent`；客户端显示待用户最终确认。
 
 ## 7. 上游识别方案对照（保留）
 

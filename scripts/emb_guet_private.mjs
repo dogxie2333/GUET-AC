@@ -12,6 +12,25 @@ const preview = join(root, 'guet_qr_preview.py');
 const session = process.env.GUET_AC_SESSION_DIR || join(root, 'session');
 const maxBytes = 8 * 1024 * 1024;
 const maxOutput = 16 * 1024;
+// Any private chat may send images (per owner request, no /bind required);
+// the per-peer cap keeps decoder CPU/network abuse bounded.
+const imageRate = new Map();
+const IMAGE_WINDOW_MS = 10 * 60_000;
+const IMAGE_LIMIT = 8;
+
+function imageAllowed(peer) {
+  if (!peer) return true;
+  const now = Date.now();
+  const entry = imageRate.get(peer);
+  if (!entry || now - entry.start > IMAGE_WINDOW_MS) {
+    imageRate.set(peer, { start: now, count: 1 });
+    if (imageRate.size > 500) imageRate.delete(imageRate.keys().next().value);
+    return true;
+  }
+  if (entry.count >= IMAGE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
 
 // One explicit stage per failure so the reply can say whether the image was
 // unavailable, unreadable, not a Chaoxing QR code, or rejected by Chaoxing.
@@ -151,7 +170,7 @@ function submitReply(result) {
 }
 
 export function createGuetPrivateRoute({ download = downloadQqImage, run = exec, runChild = capture } = {}) {
-  return async ({ privateChat, bound = false, text = '', images = [], reply }) => {
+  return async ({ privateChat, peer = '', text = '', images = [], reply }) => {
     if (!privateChat) return false;
     const command = String(text).trim();
     if (command === '/畅课状态') {
@@ -170,14 +189,12 @@ export function createGuetPrivateRoute({ download = downloadQqImage, run = exec,
       return true;
     }
     if (!images.length) return false;
-    // Image recognition alone used to be harmless; submitting on behalf of the
-    // account is not. Only a private chat already bound to a person may submit.
-    if (!bound) {
-      await reply('请先在猫猫私聊发送 /bind 完成绑定，再发签到码照片喵。');
-      return true;
-    }
     if (images.length !== 1 || !images[0].url) {
       await reply('请一次发送一张二维码图片喵。');
+      return true;
+    }
+    if (!imageAllowed(peer)) {
+      await reply('图片处理太频繁，请稍后再试喵。');
       return true;
     }
     let directory;

@@ -5,17 +5,18 @@ const eventName = /^[a-f0-9]{64}\.json$/;
 const knownChannels = new Set(['数字码', 'GPS', '二维码']);
 const knownStages = new Set(['started', 'action_required', 'confirmed', 'unconfirmed']);
 
-export async function deliverGuetEvents({ directory, bindings, permission, send, now = Date.now }) {
+// GUET signing events are owner-directed: there must be exactly one bound
+// private chat. The user asked for these notifications from that chat, so the
+// generic reminder-subscription flag is not required here; the platform still
+// enforces the client-side "allow active messages" switch. Platform permission
+// lifecycle events are unreliable for this bot, so delivery is proven by the
+// send result instead: success is claimed, ambiguity is never retried.
+export async function deliverGuetEvents({ directory, bindings, send, now = Date.now }) {
   const all = await bindings();
   const privateBindings = Object.entries(all).filter(([id, value]) =>
     /^qbot_c2c_[a-zA-Z0-9_-]+$/.test(id) && typeof value?.person === 'string' && value.person);
   if (privateBindings.length !== 1) return 0;
-  const [[id, {person}]] = privateBindings;
-  const allowed = () => {
-    const grant = permission(person, 'private', id);
-    return grant.platformAllowed && grant.subscribed;
-  };
-  if (!allowed()) return 0;
+  const [[id]] = privateBindings;
   let names;
   try { names = await readdir(directory); }
   catch (error) { if (error.code === 'ENOENT') return 0; throw error; }
@@ -36,7 +37,9 @@ export async function deliverGuetEvents({ directory, bindings, permission, send,
     if (!knownStages.has(event?.stage) || !knownChannels.has(event?.channel) ||
         typeof event.message !== 'string' || !event.message || event.message.length > 200) continue;
     const latest = await bindings();
-    if (latest[id]?.person !== person || !allowed()) break;
+    if (Object.keys(latest).filter(key => /^qbot_c2c_[a-zA-Z0-9_-]+$/.test(key) &&
+        typeof latest[key]?.person === 'string' && latest[key].person).length !== 1 ||
+        !latest[id]?.person) break;
     let claim;
     try { claim = await open(path + '.dispatch', 'wx', 0o600); }
     catch (error) { if (error.code === 'EEXIST') continue; throw error; }

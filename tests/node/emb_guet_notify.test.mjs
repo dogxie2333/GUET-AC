@@ -26,6 +26,7 @@ async function event(directory, seed, payload, ageMs = 0) {
 }
 
 const binding = { qbot_c2c_USER: { person: 'owner' } };
+// Kept for callers of the previous signature; delivery no longer requires it.
 const allowed = () => ({ platformAllowed: true, subscribed: true });
 
 test('requires exactly one bound private chat', async t => {
@@ -36,16 +37,14 @@ test('requires exactly one bound private chat', async t => {
   assert.equal(await deliverGuetEvents({ directory, bindings: async () => two, permission: allowed, send: async () => {} }), 0);
 });
 
-test('requires platform permission and explicit subscription', async t => {
+test('sends to the single bound private without a web reminder subscription', async t => {
   const directory = await workspace(t);
   await event(directory, 'perm', { stage: 'confirmed', channel: 'GPS', message: '完成' });
-  let sent = 0;
-  const send = async () => { sent++; };
+  const sent = [];
   assert.equal(await deliverGuetEvents({ directory, bindings: async () => binding,
-    permission: () => ({ platformAllowed: false, subscribed: true }), send }), 0);
-  assert.equal(await deliverGuetEvents({ directory, bindings: async () => binding,
-    permission: () => ({ platformAllowed: true, subscribed: false }), send }), 0);
-  assert.equal(sent, 0);
+    permission: () => ({ platformAllowed: false, subscribed: false }),
+    send: async (id, text) => { sent.push([id, text]); } }), 1);
+  assert.deepEqual(sent, [['qbot_c2c_USER', '完成']]);
 });
 
 test('sends a valid action_required event and claims it once', async t => {
@@ -61,7 +60,7 @@ test('sends a valid action_required event and claims it once', async t => {
   assert.equal(sent.length, 1);
 });
 
-test('delivers a marked test event through the same permission path', async t => {
+test('delivers a marked test event through the same bound-chat path', async t => {
   const directory = await workspace(t);
   await event(directory, 'test', { stage: 'confirmed', channel: '数字码', message: '【测试】数字码通知链路验证', test: true });
   const sent = [];

@@ -34,11 +34,32 @@ test('bound private chat submits once and reports confirmed', async () => {
   assert.deepEqual(calls.replies, ['已识别并提交，畅课已确认签到喵。']);
 });
 
-test('unbound chat cannot submit on the account owner behalf', async () => {
+test('unbound chat can also submit (owner explicitly requested open submission)', async () => {
   const { route, calls, reply } = routeWith();
   assert.equal(await route({ privateChat: true, bound: false, text: '', images: image, reply }), true);
-  assert.equal(calls.download, 0);
-  assert.match(calls.replies[0], /\/bind/);
+  assert.equal(calls.download, 1);
+  assert.equal(calls.preview, 1);
+  assert.equal(calls.submit, 1);
+  assert.deepEqual(calls.replies, ['已识别并提交，畅课已确认签到喵。']);
+});
+
+test('unbound chat still gets parse feedback for a non-Chaoxing code', async () => {
+  const { route, calls, reply } = routeWith({
+    decode: { code: 2, stdout: JSON.stringify({ ok: false, stage: 'parse', error: 'invalid_payload' }) },
+  });
+  await route({ privateChat: true, bound: false, text: '', images: image, reply });
+  assert.equal(calls.submit, 0);
+  assert.deepEqual(calls.replies, ['读到了二维码，但不是畅课签到码喵。']);
+});
+
+test('per-peer image rate limit stops repeated decoding', async () => {
+  const { route, calls, reply } = routeWith();
+  for (let index = 0; index < 8; index++) {
+    await route({ privateChat: true, bound: true, peer: 'qbot_c2c_RATE', text: '', images: image, reply });
+  }
+  await route({ privateChat: true, bound: true, peer: 'qbot_c2c_RATE', text: '', images: image, reply });
+  assert.equal(calls.download, 8);
+  assert.match(calls.replies.at(-1), /太频繁/);
 });
 
 test('distinguishes download, unreadable, decode, parse and submit failures', async () => {

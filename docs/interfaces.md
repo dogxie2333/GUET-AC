@@ -123,25 +123,26 @@ stdout 单行 JSON：
 ## 3. 事件通知模块（`scripts/emb_guet_notify.mjs`）
 
 - `knownStages` 增加 `action_required`。
-- 只向唯一已绑定、`platformAllowed && subscribed` 的私聊发送；保留 15 分钟窗口、`.dispatch` 独占文件、结果不明不重试。
-- 测试事件（`test:true`）与真实事件走同一路径，不特殊绕过权限。
-- 新增 Node 单测：无绑定/权限未开/已订阅发送/重复派发不重发/测试事件 stage 合法。
+- GUET 签到事件只向**唯一**已绑定私聊发送；不要求 EMB 提醒页订阅，也不依赖 `C2C_MSG_RECEIVE` 生命周期事件，平台开关由真实发送结果校验。
+- 保留 15 分钟窗口、`.dispatch` 独占文件、`sent`/`unconfirmed` 状态；结果不明不重试。
+- 测试事件（`test:true`）与真实事件走同一路径。
+- 新增 Node 单测：无绑定/多绑定/唯一绑定发送/重复派发不重发/测试事件 stage 合法。
 
 ## 4. QQ 私聊路由（`scripts/emb_guet_private.mjs`）
 
-`createGuetPrivateRoute({download, run})` 返回 `async ({privateChat,text,images,reply}) => boolean`。
+`createGuetPrivateRoute({download, run})` 返回 `async ({privateChat,peer,text,images,reply}) => boolean`。
 
 流程与回执：
 
 1. 非私聊返回 false。
 2. `/畅课状态` 保持现有回执。
-3. 图片：一次一张；URL 必须是 https 且主机为 `qpic.cn`/`qq.com`；下载上限 8 MiB。
+3. 图片：一次一张；URL 必须是 https 且主机为 `qpic.cn`/`qq.com`/`qq.com.cn`；下载上限 8 MiB；每私聊 10 分钟最多 8 张（超过回“图片处理太频繁”）。
 4. 下载失败回执：“QQ 图片下载失败，请重发原图或稍后再试喵。”；超限：“图片超过 8 MiB，请压缩后再发喵。”；URL 不合法：“这张图片的下载地址无效，请重新发送喵。”
 5. 调 `guet_qr_preview.py --json`（超时 10 秒）。失败按 `stage/error` 区分：
    - `image` → “图片无法读取，请发原图喵。”
    - `decode`（no_qr/multiple_qr/timeout/internal）→ “没能在图片里读出一个二维码喵。”
    - `parse`（invalid_payload）→ “读到了二维码，但不是畅课签到码喵。”
-6. 识别成功后调 `guet-ac qr-submit`（stdin JSON，超时 30 秒，env 带 `GUET_AC_SESSION_DIR`）：
+6. 识别成功后调 `guet-ac qr-submit`（stdin JSON，超时 30 秒，env 带 `GUET_AC_SESSION_DIR`）。按用户明确要求，**所有私聊（含未绑定）都提交**；`/bind` 只影响主动通知目标，不再作为提交门槛。
    - 确认：“已识别并提交，畅课已确认签到喵。”
    - 未确认：“已识别并提交，畅课还没确认，请打开畅课查看喵。”
    - `session`：“二维码已识别，但畅课会话已失效，请更新会话后再发一次喵。”
