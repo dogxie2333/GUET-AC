@@ -10,7 +10,7 @@
 | Pi 常驻监控 | 已升级 | `guet-ac.service` 用户单元 active、NRestarts=0，实际参数为 `watch --auto --event-dir …/events`；配置热加载已启用，网页改配置无需重启服务。 |
 | 自动数字签到 | 已启用，真实提交待活动 | 数字码读取→提交→回查；跨重启去重，只有畅课回查确认才显示“已确认完成”。本轮 31 项旧测试 + 新增测试全部通过。 |
 | GPS 自动签到 | 已启用，真实活动待验收 | `auto_gps=true`，按 `course_locations`/`default_location` 取花江地点并 WGS84→GCJ-02 提交；未绑定地点时只发 `action_required`，不假提交。 |
-| 课程地点网页 | **已接 Pi** | <https://ai.guet.win/guet-locations.html>，仅管理员；`GET /api/guet-config` 实测 200，返回 64 个地点、当前配置和服务状态；保存/取消绑定与 auto_* 开关走 `POST`。 |
+| 课程地点网页 | **已接 Pi** | <https://ai.guet.win/guet-locations.html>，管理员或 `guet-config-persons.json` 授权账号；`GET /api/guet-config` 实测 200，返回 64 个地点、当前配置和服务状态；保存/取消绑定与 auto_* 开关走 `POST`。 |
 | QQ 私聊发图 → 畅课扫码提交 | **已接通真实 QQ 链路，待真实活动** | 私聊图片 → 下载 → 识别 → 解析 → `qr-submit` → 回查 → 分阶段回执；用户实测收到“二维码有效，但提交被畅课拒绝（可能活动已结束）”。按用户明确要求，任意私聊均可提交，不再要求 `/bind`；每私聊 10 分钟最多 8 张图。 |
 | 投影小码识别 | Aruco 已部署 Pi | `wxscan → zxing → detail → aruco`；Aruco 在 `systemd-run --user --scope` 中运行，避开桥接 150 MiB cgroup；Pi 合成投影图实测 Aruco 定位 1 个并解码成功。 |
 | 签到事件主动通知 | **已打通真实推送，用户已确认收到** | 唯一已绑定私聊、15 分钟窗口、`.dispatch` 去重；真实主动消息 API 实测 HTTP 200 且返回消息 ID，测试事件 `.dispatch` 写 `sent`，用户确认两条测试消息都收到。QQ 的 `C2C_MSG_RECEIVE` 生命周期事件未在网关上观察到，因此改用“发送结果”证明平台许可，不再依赖 EMB 网页订阅。 |
@@ -32,7 +32,7 @@
 - GPS 提交复用 `Client.submit(place=…, accuracy=…, coordinate_system=…)`，使用课程绑定地点或默认地点；未绑定地点时 `action_required`，不提交。
 - `guet-ac` 新增 `config-json`、`config-check`、`config-update`、`locations --json`、`status --json`、`qr-submit`、`test-event`。
 - `config-update` 由网页调用：只允许 8 个配置字段、复用 Python 校验、写前备份 `config.toml.before-web-<UTC>`、0600 原子替换。
-- Web 端 `deploy/emb-web-ai/guet-config.mjs` 挂载 `/api/guet-config`：仅管理员、POST 必须同源、子进程超时、状态读取失败降级；页面 `web/guet-locations.html` 部署为 `/guet-locations.html`，同时保留 `file://` 离线模拟模式。
+- Web 端 `deploy/emb-web-ai/guet-config.mjs` 挂载 `/api/guet-config`：管理员或 0600 的 `~/.local/share/guet-ac/guet-config-persons.json` 授权账号可访问，POST 必须同源、子进程超时、状态读取失败降级；页面 `web/guet-locations.html` 部署为 `/guet-locations.html`，同时保留 `file://` 离线模拟模式。授权文件每次请求重新读取，修改后刷新页面即生效。
 - 页面可浏览课程（来自 `status --json` 去重）、64 个 OSM 地点、已有绑定，并切换 `auto_number`/`auto_gps`；监控服务每轮检测配置 mtime，热加载新配置。
 
 ### 2.3 QQ 扫码照片全链路
@@ -65,7 +65,7 @@
 - 核心源码：`guet_ac/cli.py`、`client.py`、`config.py`、`store.py`、`ledger.py`；网页 API `deploy/emb-web-ai/guet-config.mjs`；识别器 `scripts/guet_qr_preview.py`、`scripts/guet_aruco_worker.py`、`scripts/guet_qr_bench.py`、`scripts/guet_wxscan.mjs`。
 - QQ 模块：源码 `scripts/emb_guet_private.mjs`、`scripts/emb_guet_notify.mjs`；生产入口为系统单元 `emb-qq-bridge.service` 启动的 `~/emb-maibot-staging/emb-dsh-qqbot-staging/qq-maibot-live.js`。私聊路由在相邻 `emb-qq-official/main.js` 与 `emb-guet-private.mjs`，主动通知挂在 `emb-plugin.js`。
 - Web：`~/emb-web-ai/server.mjs` 已注入 `guet-config.mjs`；页面 `~/emb-web-ai/public/guet-locations.html`（仓库源 `web/guet-locations.html`）。入口 <https://ai.guet.win/guet-locations.html>。
-- 地点数据：`guet_ac/data/huajiang.json`（64 条，OSM/ODbL）。课程地点网页必须管理员登录；提醒页仍为 <https://ai.guet.win/?plugin=reminders>。
+- 地点数据：`guet_ac/data/huajiang.json`（64 条，OSM/ODbL）。课程地点网页需要管理员或 `guet-config-persons.json` 授权账号；提醒页仍为 <https://ai.guet.win/?plugin=reminders>。
 - 版本：`guet-ac 0.3.0` wheel 在 `dist/guet_ac-0.3.0-py3-none-any.whl`（构建产物，仓库 `.gitignore` 掉 `dist/`）。Pi 已安装 0.3.0。
 
 ## 4. 验收顺序（含仅剩的用户操作）
@@ -107,7 +107,7 @@ journalctl -u emb-qq-bridge --since '15 min ago' --no-pager
 - **发图无回执或回执异常。** 先看桥接健康计数和日志。回执已区分下载/解码/解析/会话/提交/网络阶段；需要定位时取原图在 Pi 上跑 `guet_qr_preview.py --json`，不要记录二维码内容。wxscan 模型目录为 `~/.local/share/guet-ac/wxscan/`。
 - **Aruco 不生效。** 确认 `scripts/guet_aruco_worker.py` 存在、`~/.local/bin/systemd-run` 可用、桥接进程能访问 `/run/user/1000/bus`；Aruco 只在其他解码器失败后触发，失败会静默跳过，不影响普通识别。临时禁用可把 worker 改名（scoped 调用会安全返回空）。
 - **畅课会话失效。** 在本机仓库运行 `uv run --no-project --python 3.10 --with playwright python scripts/guet_browser_login.py`，通过校方认证后由用户确认通过 SSH 交付仅限畅课域名的会话；导入后在 Pi 先跑 `status --json`。
-- **网页配置异常。** `GET /api/guet-config` 仅管理员可用；未登录返回 302/401 是预期。检查 `journalctl` 中 emb-web-ai 日志和 `~/.dsh/emb/webai.log`；页面源 `web/guet-locations.html`，注入脚本 `scripts/stage_web_guet.py` 可重复运行（幂等）。
+- **网页配置异常（403 当前账号没有课程地点配置权限）。** 该页只允许管理员或 `~/.local/share/guet-ac/guet-config-persons.json` 里列出的 Casdoor person。先看 `~/.dsh/emb/webai.log` 最近的“登录成功 person=…”，把该 person 加进文件（格式 `{"persons":["<person>"]}`，0600），刷新页面即可，无需重启 Web。未登录返回 302/401 是预期。其它排查看 `journalctl` 中 emb-web-ai 日志；页面源 `web/guet-locations.html`，注入脚本 `scripts/stage_web_guet.py` 可重复运行（幂等）。
 - **需要关闭 GPS 自动提交。** 在网页关闭 auto_gps，或执行：
   ```bash
   printf '%s' '{"auto_gps":false}' | GUET_AC_SESSION_DIR="$PWD/session" .venv/bin/guet-ac --config config.toml config-update
@@ -123,12 +123,12 @@ journalctl -u emb-qq-bridge --since '15 min ago' --no-pager
 
 ## 6. 验证记录
 
-- 本地测试：`pytest -q` **106 passed**；Node `node --test tests/node/*.test.mjs tests/web/guet-config.test.mjs` **30 passed**；`ruff check` 通过。
+- 本地测试：`pytest -q` **106 passed**；Node `node --test tests/node/*.test.mjs tests/web/guet-config.test.mjs` **32 passed**；`ruff check` 通过。
 - Pi 安装：`guet-ac 0.2.0 → 0.3.0`，`guet-ac` 用户单元 active、NRestarts=0、ExecStart 为 `watch --auto --event-dir …/events`。
 - Pi 只读：`status --json` 返回本人资料和空活动列表；`config-json` 显示 `auto_number=true`、`auto_gps=true`；`locations --json` 返回 64 地点。
 - Pi 解码：wxscan 读出普通和紧凑码（compact 控制字节解析正确）；Aruco scoped worker 0.45 s 返回候选；合成投影基准 clean/far-small/low-contrast 可解码，inverted 由 zxing try_invert 解出，multiple/no-qr 分类正确。
 - Pi 全链路真实 QQ：用户发送 `dist/guet-qr-chain-test.png`，约 1.3 s 内收到“二维码有效，但提交被畅课拒绝（可能活动已结束）喵。”，证明 QQ 附件下载、wxscan 识别、载荷解析、`qr-submit` 会话读取和分阶段回执全部打通；未绑定私聊也走同一提交路径（用户要求），仅受每私聊图片频率限制。
-- Web API：管理员 GET 200（64 地点、service auto 三项 true）；POST 绑定/取消绑定 200；未登录 302/401 符合预期。
+- Web API：管理员/授权账号 GET 200（64 地点、service auto 三项 true）；POST 绑定/取消绑定 200；未登录 302/401 符合预期；非管理员授权账号实测 200。
 - 主动通知：直接调用 QQ 主动消息 API 返回 HTTP 200 且带消息 ID；`test-event` 生成事件后桥接约 5 秒内发送，`.dispatch` 内容为 `sent`；用户已确认收到“【测试】GUET 主动通知链路探测”和“【测试】数字码签到已确认完成”两条消息。
 
 ## 7. 上游识别方案对照（保留）

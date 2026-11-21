@@ -155,7 +155,7 @@ stdout 单行 JSON：
 
 新增文件 `deploy/emb-web-ai/guet-config.mjs`，导出 `createGuetConfig({ bin, config, sessionDir, home, exec })`，返回 `handle(req,res,{pathname,person,isAdmin,sameOrigin})`。
 
-- 仅 `isAdmin` 可访问；非管理员 403 `{"error":"forbidden"}`。
+- 管理员 `isAdmin` 或 `~/.local/share/guet-ac/guet-config-persons.json`（0600，`{"persons":[...]}`，每次请求重新读取）中列出的 person 可访问；未授权 403 `{"error":"forbidden","message":"需要课程地点配置权限。"}`。
 - `GET /api/guet-config`：返回
   ```json
   {"ok":true,"config":{...},"locations":[...],"courses":[...],"coursesError":null,
@@ -177,7 +177,7 @@ stdout 单行 JSON：
 
 页面：更新 `dist/guet-course-location-simulation.html`，同一文件同时支持两种模式：
 
-- 由 `https://ai.guet.win/guet-locations.html` 打开（http/https）：调用 `/api/guet-config`，显示服务器状态、课程列表、已有绑定；保存/取消绑定、切换 `auto_gps`/`auto_number` 都走 POST。非管理员或未登录给出明确提示。
+- 由 `https://ai.guet.win/guet-locations.html` 打开（http/https）：调用 `/api/guet-config`，显示服务器状态、课程列表、已有绑定；保存/取消绑定、切换 `auto_gps`/`auto_number` 都走 POST。无权限或未登录给出明确提示（授权见上一节）。
 - 直接 `file://` 打开：保留“离线模拟”行为，使用内置地点数据和 localStorage。
 - 页面不得内联任何会话、密钥或管理口令。
 

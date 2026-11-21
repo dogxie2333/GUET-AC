@@ -2,6 +2,7 @@
 // 登录、会话与管理员身份由 server.mjs 判定；本模块只做管理员/同源校验并代理
 // guet-ac 子命令，不读取会话、Cookie 或二维码内容，也不直接解析/拼接 TOML。
 import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { homedir, userInfo } from "node:os";
 import { join } from "node:path";
 
@@ -217,6 +218,27 @@ export function createGuetConfig(options = {}) {
   const configPath = options.config || process.env.GUET_AC_CONFIG || join(guetHome, "config.toml");
   const sessionDir = options.sessionDir || process.env.GUET_AC_SESSION_DIR || join(guetHome, "session");
   const exec = options.exec || execFileWithInput;
+  const personsFile = options.personsFile || process.env.GUET_CONFIG_PERSONS_FILE ||
+    join(guetHome, "guet-config-persons.json");
+  const personPattern = /^[A-Za-z0-9_-]{4,128}$/;
+  const inlinePersons = (Array.isArray(options.allowedPersons) ? options.allowedPersons
+    : String(options.allowedPersons || process.env.GUET_CONFIG_PERSONS || "").split(","))
+    .map(person => String(person).trim()).filter(person => personPattern.test(person));
+  // 课程地点配置不只限全局 admin：Pi 主人可以用 0600 的独立授权文件
+  // 指定额外 Casdoor person，避免把整个 Web 管理权限交给日常账号。
+  // 每次请求重新读取，改授权文件后刷新页面即生效，无需重启 Web。
+  async function loadAllowedPersons() {
+    const persons = new Set(inlinePersons);
+    try {
+      const parsed = JSON.parse(await readFile(personsFile, "utf8"));
+      const list = Array.isArray(parsed?.persons) ? parsed.persons
+        : Array.isArray(parsed) ? parsed : [];
+      for (const person of list) {
+        if (typeof person === "string" && personPattern.test(person)) persons.add(person);
+      }
+    } catch { /* 文件可选；不存在时只允许 admin 或内联列表 */ }
+    return persons;
+  }
 
   // Pi 的用户 systemd 需要 XDG_RUNTIME_DIR / DBUS_SESSION_BUS_ADDRESS；
   // 从服务进程启动时通常没有，这里按 uid 补默认值（已有环境变量则保持）。
@@ -386,10 +408,11 @@ export function createGuetConfig(options = {}) {
   }
 
   return async function handle(req, res, context = {}) {
-    const { pathname, isAdmin, sameOrigin } = context;
+    const { pathname, person, isAdmin, sameOrigin } = context;
     if (pathname !== API_PATH) return false;
-    if (!isAdmin) {
-      send(res, 403, { error: "forbidden", message: "需要管理员权限。" });
+    const allowedPersons = await loadAllowedPersons();
+    if (!isAdmin && !allowedPersons.has(String(person || ""))) {
+      send(res, 403, { error: "forbidden", message: "需要课程地点配置权限。" });
       return true;
     }
     try {

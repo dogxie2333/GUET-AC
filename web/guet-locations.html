@@ -205,7 +205,7 @@ function renderService() {
 function render() {
   $('mode-badge').textContent = online ? '在线配置 · 连接 Pi' : '离线模拟 · 浏览器本地';
   $('mode-note').textContent = online
-    ? '读取并修改 Pi 上 guet-ac 的真实配置；只有管理员可以保存。'
+    ? '读取并修改 Pi 上 guet-ac 的真实配置；管理员或课程地点授权账号可以保存。'
     : '离线模拟：绑定仅保存在此浏览器，不会提交到服务器。';
   $('error-card').hidden = true;
   $('edit-card').hidden = false;
@@ -238,7 +238,7 @@ async function postConfig(patch, message) {
     try { data = await response.json(); } catch {}
     busy = false;
     if (response.status === 401) { fatal('尚未登录 EMB，请先登录后再打开此页面。', '/auth/login', '去登录'); return; }
-    if (response.status === 403) { fatal((data && data.message) || '当前账号没有管理员权限，无法保存配置。'); return; }
+    if (response.status === 403) { fatal((data && data.message) || '当前账号没有课程地点配置权限，无法保存配置。'); return; }
     if (!response.ok || !data || data.ok !== true) {
       render();
       setFeedback((data && (data.message || data.error)) || ('保存失败（HTTP ' + response.status + '）。'), 'error');
@@ -290,7 +290,7 @@ async function loadOnline() {
   let data = null;
   try { data = await response.json(); } catch {}
   if (response.status === 401) { fatal('尚未登录 EMB，请先登录后再打开此页面。', '/auth/login', '去登录'); return; }
-  if (response.status === 403) { fatal('当前账号不是管理员，无法查看或修改课程地点配置。', '/', '返回 EMB 首页'); return; }
+  if (response.status === 403) { fatal('当前账号没有课程地点配置权限。请用管理员账号，或在 Pi 的 guet-config-persons.json 中加入当前账号后重试。', '/', '返回 EMB 首页'); return; }
   if (!response.ok || !data || data.ok !== true) {
     fatal((data && (data.message || data.error)) || ('读取配置失败（HTTP ' + response.status + '）。'));
     return;

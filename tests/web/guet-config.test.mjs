@@ -110,7 +110,8 @@ function happyRoutes() {
   ];
 }
 
-function makeHandler({ routes = happyRoutes(), isAdmin = true, sameOrigin = () => true } = {}) {
+function makeHandler({ routes = happyRoutes(), isAdmin = true, sameOrigin = () => true,
+  allowedPersons = [] } = {}) {
   const exec = makeExec(routes);
   const instance = createGuetConfig({
     bin: "/opt/guet-ac",
@@ -118,6 +119,7 @@ function makeHandler({ routes = happyRoutes(), isAdmin = true, sameOrigin = () =
     sessionDir: "/opt/session",
     home: "/home/pi",
     exec,
+    allowedPersons,
   });
   const handle = (req, res, extras = {}) =>
     instance(req, res, {
@@ -138,6 +140,24 @@ test("未知路径返回 false 且不写响应", async () => {
   assert.equal(res.headersSent, false);
   assert.equal(exec.calls.length, 0);
 });
+
+test("非管理员但列入课程地点授权列表可访问", async () => {
+  const { handle, exec } = makeHandler({ isAdmin: false, allowedPersons: ["owner"] });
+  const res = fakeRes();
+  await handle(fakeReq(), res, { person: "owner" });
+  assert.equal(res.statusCode, 200);
+  assert.equal(exec.calls.length, 4);
+});
+
+test("非管理员已登录但未授权仍 403", async () => {
+  const { handle, exec } = makeHandler({ isAdmin: false, allowedPersons: ["owner"] });
+  const res = fakeRes();
+  await handle(fakeReq(), res, { person: "stranger" });
+  assert.equal(res.statusCode, 403);
+  assert.equal(JSON.parse(res.body).error, "forbidden");
+  assert.equal(exec.calls.length, 0);
+});
+
 
 test("非管理员 GET 返回 403 forbidden", async () => {
   const { handle, exec } = makeHandler({ isAdmin: false });
