@@ -11,6 +11,13 @@ SIGNED = {"on_call", "on_call_fine", "on_personal_leave"}
 ACTIVE = {"in_progress", "on_going", "active", "started"}
 
 
+def failure(message, stage=None):
+    """构造带阶段标记的错误，供 CLI 区分 parse/session/network/submit/verify。"""
+    error = GuetError(message)
+    error.stage = stage
+    return error
+
+
 def identifier(value):
     if isinstance(value, bool) or not re.fullmatch(r"[0-9]+", str(value)):
         raise GuetError("课程或签到编号无效。")
@@ -52,21 +59,23 @@ class Client:
             with self.session.request(method, BASE + path, timeout=20, allow_redirects=False,
                                       headers={"Accept": "application/json"}, **kwargs) as response:
                 if response.status_code in (301, 302, 303, 307, 308, 401):
-                    raise GuetError("会话已过期，请重新 login。")
+                    raise failure("会话已过期，请重新 login。", "session")
                 if response.status_code == 403:
-                    raise GuetError("此账号没有接口访问权限（403）。")
+                    raise failure("此账号没有接口访问权限（403）。", "submit")
                 if not 200 <= response.status_code < 300:
-                    raise GuetError(f"接口返回 HTTP {response.status_code}。")
+                    raise failure(f"接口返回 HTTP {response.status_code}。", "submit")
                 try:
                     payload = response.json()
                 except ValueError as exc:
-                    raise GuetError("接口未返回 JSON，请重新登录或检查站点状态。") from exc
+                    raise failure("接口未返回 JSON，请重新登录或检查站点状态。",
+                                  "submit") from exc
                 if isinstance(payload, dict) and (payload.get("error_code")
                                                  or payload.get("success") is False):
-                    raise GuetError("服务器拒绝请求：" + str(payload.get("error_code", "业务错误")))
+                    raise failure("服务器拒绝请求："
+                                  + str(payload.get("error_code", "业务错误")), "submit")
                 return payload
         except requests.RequestException as exc:
-            raise GuetError("请求中断，请检查网络；提交结果请在畅课内查看。") from exc
+            raise failure("请求中断，请检查网络；提交结果请在畅课内查看。", "network") from exc
 
     def profile(self):
         data = self.request("GET", "/api/profile")
@@ -131,7 +140,12 @@ class Client:
         else:
             raise GuetError("未支持的签到类型。")
         self.request("PUT", f"/api/rollcall/{rid}/{suffix}", json=body, params=params)
-        return self.verify(record)
+        try:
+            return self.verify(record)
+        except GuetError as exc:
+            # 写请求已发出，之后的任何异常都属于回查阶段，结果不明。
+            exc.stage = "verify"
+            raise
 
     def qr_token(self, record):
         cid, rid = identifier(record["course_id"]), identifier(record["id"])

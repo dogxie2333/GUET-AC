@@ -17,7 +17,9 @@
 - 默认每 15 秒查询活动。数字码从接口读取；GPS 使用课程绑定地点或默认地点。
 - 花江校区地点来自 OpenStreetMap，每条保留来源；预设 WGS84，默认转换 GCJ-02 后提交。
 - 二维码可粘贴原始内容提交；当前会话有取码权限时，启用 `auto_qr` 可自动取码并提交。
-- 每次提交前重查活动，每个活动在同一进程中最多提交一次，提交后回查本人状态。
+- QQ 私聊照片链路（需 EMB 部署）：下载 → 识别 → 解析 → 提交 → 回查 → 分阶段回执；只对已绑定私聊提交。
+- 课程地点网页（需 EMB 部署）：管理员在 `https://ai.guet.win/guet-locations.html` 绑定课程地点、开关 `auto_number`/`auto_gps`；配置写入 Pi 后监控进程热加载。
+- 每次提交前重查活动；同一活动在任意重启前后最多提交一次（事件目录 `state.json` 去重），提交后回查本人状态，只有回查确认才显示“已确认完成”。
 
 本版是命令行项目。Android 客户端参考及已有 APK 见 [协议研究记录](docs/protocol.md)。
 
@@ -44,6 +46,8 @@ default_location = "osm-way-606411550" # 第一教学楼
 poll_seconds = 15
 accuracy = 35.0
 submit_coordinate_system = "gcj02"
+auto_number = true
+auto_gps = false
 auto_qr = false
 
 [course_locations]
@@ -56,12 +60,17 @@ auto_qr = false
 ```powershell
 uv run guet-ac once --dry-run # 只查询
 uv run guet-ac once           # 查询并处理一次
-uv run guet-ac watch          # 持续处理
+uv run guet-ac watch --auto   # 按配置 auto_number/auto_gps/auto_qr 持续处理
+uv run guet-ac watch          # 旧用法：数字码+GPS 自动处理
 uv run guet-ac number 12345 67890 # 输入数字码，参数为课程和活动编号
 uv run guet-ac qr             # 粘贴二维码内容，为当前账号提交
+uv run guet-ac qr-submit      # stdin 读 JSON 载荷，供 QQ 桥接调用（通常不用手输）
+uv run guet-ac test-event --event-dir events # 生成一条【测试】通知事件
 ```
 
-二维码图片可先用扫码工具解出原始内容；本版不含相机或图片识别界面。`auto_qr=true` 通过当前学生会话请求服务器生成的有效 data，读不到时提示人工扫码。
+二维码图片可先用扫码工具解出原始内容；本版不含相机或图片识别界面。`auto_qr=true` 通过当前学生会话请求服务器生成的有效 data，读不到时提示人工扫码。QQ 私聊照片识别在 EMB Pi 部署中由 `scripts/guet_qr_preview.py` 完成，识别成功后再调用 `qr-submit`，不会把“识别出二维码”当成“已签到”。
+
+网页配置与服务部署（Pi / EMB）见 [交接文档](docs/guet-emb-pi-handoff.md)；内部 CLI/事件/识别器契约见 [docs/interfaces.md](docs/interfaces.md)。
 
 ## 多账号
 

@@ -44,3 +44,50 @@ CAS 页面包含 `pwdFromId`、`pwdEncryptSalt`、`execution`。页面的 `encry
 紧凑字段按 base36 索引映射：`0=courseId`、`3=data`、`4=rollcallId`；`\x10` 后是 base36 整数；`\x1e`/`\x1f` 分别转义 `!`/`~`。客户端解码载荷，不生成服务器签名。
 
 自动取码默认关闭，配置 `auto_qr=true` 后使用当前账号请求取码接口。403、缺码或过期时输出原因，不反复探测、不构造伪造令牌。
+
+## CLI 契约（2026-11-21）
+
+全局参数 `--account`、`--config PATH` 必须写在子命令之前。
+
+| 命令 | 说明 | 失败行为 |
+| --- | --- | --- |
+| `config-json` | 只读，stdout 单行 JSON，字段为 `default_location`、`course_locations`、`auto_number`、`auto_gps`、`auto_qr`、`poll_seconds`、`accuracy`、`submit_coordinate_system`；缺失字段按默认值补齐，不含 Cookie/会话/密码 | stderr `{"error":"..."}`，退出码 2 |
+| `config-check` | 只读，配置合法无输出退出 0 | stderr `{"error":"..."}`，退出码 2 |
+| `config-update` | stdin 读 JSON 对象，允许上述 8 个字段，未提供的键保持原值；复用 config.load 校验；写入前备份到 `<config>.before-web-<UTC>`（0600），原子替换；成功输出写回后的 config JSON | 退出码 2 且不改原文件 |
+| `locations --json` | stdout `{"places":[{id,name,latitude,longitude,source,method?}]}`；不带 `--json` 保持制表符文本 | 退出码 1 |
+| `status --json` | stdout `{"profile":{id,name},"rollcalls":[{id,course_id,course_title,status,kind,active}],"at":ISO8601}`，`kind` 为 `GPS`/`数字码`/`二维码`/`其他`，不输出会话或原始响应 | stderr `{"error":"..."}`，退出码 2 |
+| `qr-submit` | stdin 读 `{"courseId","rollcallId","data"}` 或 `{"text": 二维码原始内容}`；confirmed 退出 0，未确认退出 3 | `{"ok":false,"stage":"parse\|session\|network\|submit\|verify","error":"..."}`，退出码 2 |
+| `test-event` | `--event-dir DIR`（必填）、`--channel 数字码\|GPS\|二维码`、`--stage started\|action_required\|confirmed\|unconfirmed`；写一条 `test:true`、消息以 `【测试】` 开头的事件并输出文件路径 | 退出码 1 |
+
+`watch` / `once` 的新增参数：
+
+- `--auto`：严格按 `auto_number`、`auto_gps`、`auto_qr` 三个配置开关执行；
+- `--auto-number` / `--auto-gps`：只强制开启对应通道（保持旧 `--auto-number` 不处理 GPS/二维码的语义）；
+- 默认（不带以上开关）：数字码与 GPS 自动处理，二维码由 `auto_qr` 控制，与旧版一致；
+- `--dry-run`：只查询，不提交，也不写去重状态；
+- `--event-dir DIR`：事件目录；`--state-file PATH`：覆盖去重状态文件路径；
+- 配置热加载：`watch`/`once` 每轮检查 `--config` 文件的 mtime/size，变化后重新加载并重算 `auto_*` 通道与 `poll_seconds`，网页 `config-update` 写回后无需重启服务；重载失败时 stderr 打印一行中文警告并继续使用旧配置。
+
+GPS 提交复用 `Client.submit(place=..., accuracy=..., coordinate_system=...)`，数字码使用 `Client.number_code`。只有畅课回查确认本人已签到时才算 confirmed；GPS 未绑定地点时不提交，改为 action_required。
+
+## 事件协议与去重状态
+
+事件目录中每个事件一个 `64 位十六进制.json` 文件，内容：
+
+```json
+{"stage": "started|action_required|confirmed|unconfirmed",
+ "channel": "GPS|数字码|二维码",
+ "message": "不超过 200 字符",
+ "test": true}
+```
+
+- `started`：活动开始，每活动一次；
+- `action_required`：本应自动提交但缺少配置（如 GPS 未绑定地点）或提交前失败，需要用户处理；
+- `confirmed`：畅课回查确认；
+- `unconfirmed`：提交过但回查未确认，或上次提交结果不明。
+
+去重/重启恢复使用事件目录下的 `state.json`（0600、temp+replace 原子替换，损坏文件按空账本处理，可用 `--state-file` 覆盖）：
+
+- 发起写请求前先持久化 `submitting`，请求后写 `confirmed`/`unconfirmed`；同一活动在任意重启前后最多一次写请求；
+- 启动时发现仍进行中的 `submitting`：不再提交，产生一次 unconfirmed 事件说明上次结果不明；
+- 记录超过 14 天或超过 500 条时清理。`state.json` 不是 64 位十六进制名，且不含顶层 `stage`，不会被通知模块当作签到事件。

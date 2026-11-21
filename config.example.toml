@@ -1,11 +1,20 @@
 # 地点 ID 运行 guet-ac locations 查看；坐标均为 WGS84。
-# 留空时，未绑定课程的 GPS 签到只提醒。
+# 留空时，未绑定课程的 GPS 签到不自动提交，只产生 action_required 提醒。
 default_location = ""
 poll_seconds = 15
 accuracy = 35.0
 # 与桂电原生客户端的地图提交方式一致，提交前把 WGS84 转为 GCJ-02。
 submit_coordinate_system = "gcj02"
-# 学生会话有权限取得二维码 data 时，启用后可自动取码并提交。
+
+# 以下三个 auto_* 只在 `guet-ac watch --auto` 时按开关执行；
+# 旧的 `--auto-number` / `--auto-gps` 仍可单独强制开启对应通道。
+# 自动读取课堂数字码并提交（回查确认后才算 confirmed）。
+auto_number = false
+# 自动提交 GPS 签到。风险提示：使用的是预录坐标而不是真实定位，
+# 可能违反学校考勤规定；仅在理解并自担风险时启用。
+# 未绑定地点（课号未配置且 default_location 为空）时不会假提交，只发 action_required。
+auto_gps = false
+# 服务端取码：学生会话有权限取得二维码 data 时，启用后可自动取码并提交。
 auto_qr = false
 
 [course_locations]

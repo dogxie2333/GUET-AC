@@ -16,7 +16,9 @@ HOSTS = {"courses.guet.edu.cn", "identity.guet.edu.cn", "cas.guet.edu.cn"}
 
 
 class GuetError(Exception):
-    pass
+    """用户可读错误。stage 由调用方按 parse/session/network/submit/verify 标注。"""
+
+    stage = None
 
 
 def checked_url(url):

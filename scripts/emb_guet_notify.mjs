@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 const eventName = /^[a-f0-9]{64}\.json$/;
 const knownChannels = new Set(['数字码', 'GPS', '二维码']);
-const knownStages = new Set(['started', 'confirmed', 'unconfirmed']);
+const knownStages = new Set(['started', 'action_required', 'confirmed', 'unconfirmed']);
 
 export async function deliverGuetEvents({ directory, bindings, permission, send, now = Date.now }) {
   const all = await bindings();
